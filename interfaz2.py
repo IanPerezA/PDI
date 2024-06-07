@@ -7,166 +7,195 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import os
 
-# Importar las clases de los algoritmos
 from Filtro_de_Robinson2 import FiltroRobinson
 from Filtro_Umbralado2 import FiltroUmbralado
 from filtromin2 import FiltroMin
 from Gamma2 import Gama
 
-# Función para cargar una imagen
-def load_image():
-    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png;*.bmp")])
-    if file_path:
-        img = cv2.imread(file_path)
-        return img, file_path
+def cargar_imagen():
+    ruta_archivo = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg;*.png;*.bmp")])
+    if ruta_archivo:
+        img = cv2.imread(ruta_archivo)
+        return img, ruta_archivo
     return None, None
 
-# Función para mostrar la imagen en la interfaz
-def display_image(img, label, max_size=(400, 400)):
+def mostrar_imagen(img, etiqueta, tamaño_max=(400, 300)):
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img_pil = Image.fromarray(img_rgb)
-    img_pil.thumbnail(max_size, Image.LANCZOS)
+    img_pil.thumbnail(tamaño_max, Image.LANCZOS)
     img_tk = ImageTk.PhotoImage(img_pil)
-    label.config(image=img_tk)
-    label.image = img_tk
+    etiqueta.config(image=img_tk)
+    etiqueta.image = img_tk
 
-# Función para mostrar el histograma de una imagen en la interfaz
-def display_histogram(img, label):
-    fig, ax = plt.subplots()
-    if len(img.shape) == 2:  # Grayscale image
+def mostrar_histograma(img, etiqueta, tamaño_max=(400, 300)):
+    for widget in etiqueta.winfo_children():
+        widget.destroy()
+
+    fig, ax = plt.subplots(figsize=(4, 3))
+    if len(img.shape) == 2:
         ax.hist(img.ravel(), bins=256, color='black', alpha=0.7)
-    else:  # Color image
-        colors = ('r', 'g', 'b')
-        for i, color in enumerate(colors):
+    else:
+        colores = ('r', 'g', 'b')
+        for i, color in enumerate(colores):
             ax.hist(img[:, :, i].ravel(), bins=256, color=color, alpha=0.7)
     ax.set_xlim([0, 256])
     ax.set_ylim([0, None])
     fig.tight_layout()
     
-    canvas = FigureCanvasTkAgg(fig, master=label)
+    canvas = FigureCanvasTkAgg(fig, master=etiqueta)
     canvas.draw()
     canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    etiqueta.config(width=tamaño_max[0], height=tamaño_max[1])
 
-# Crear la ventana principal
-root = tk.Tk()
-root.title("Procesamiento Digital de Imágenes")
+    return fig
 
-# Crear el widget de pestañas
-tab_control = ttk.Notebook(root)
+def mostrar_histograma_gris(img, etiqueta, tamaño_max=(400, 300)):
+    for widget in etiqueta.winfo_children():
+        widget.destroy()
 
-# Pestaña de portada
-tab_portada = ttk.Frame(tab_control)
-tab_control.add(tab_portada, text="Portada")
+    fig, ax = plt.subplots(figsize=(4, 3))
+    ax.hist(img.ravel(), bins=256, color='black', alpha=0.7)
+    ax.set_xlim([0, 256])
+    ax.set_ylim([0, None])
+    fig.tight_layout()
+    
+    canvas = FigureCanvasTkAgg(fig, master=etiqueta)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    etiqueta.config(width=tamaño_max[0], height=tamaño_max[1])
 
-# Pestaña de Filtro Robinson
-tab_robinson = ttk.Frame(tab_control)
-tab_control.add(tab_robinson, text="Filtro de Robinson")
+    return fig
 
-# Pestaña de Filtro Umbralado
-tab_umbralado = ttk.Frame(tab_control)
-tab_control.add(tab_umbralado, text="Filtro Umbralado")
+def cerrar_plots(figuras):
+    for fig in figuras:
+        plt.close(fig)
 
-# Pestaña de Filtro Mínimo
-tab_min = ttk.Frame(tab_control)
-tab_control.add(tab_min, text="Filtro Mínimo")
+raiz = tk.Tk()
+raiz.title("Procesamiento Digital de Imágenes")
+raiz.geometry("1050x700")
 
-# Pestaña de Gama
-tab_gama = ttk.Frame(tab_control)
-tab_control.add(tab_gama, text="Gama")
+control_pestañas = ttk.Notebook(raiz)
 
-# Añadir el control de pestañas a la ventana principal
-tab_control.pack(expand=1, fill="both")
+pestaña_portada = ttk.Frame(control_pestañas)
+control_pestañas.add(pestaña_portada, text="Portada")
 
-# Añadir la imagen de fondo a la portada
-background_image = Image.open("fondo.jpg")
-background_image = ImageOps.fit(background_image, (800, 600), Image.LANCZOS)
-background_image = ImageTk.PhotoImage(background_image)
-background_label = tk.Label(tab_portada, image=background_image)
-background_label.place(relwidth=1, relheight=1)
+pestaña_robinson = ttk.Frame(control_pestañas)
+control_pestañas.add(pestaña_robinson, text="Filtro de Robinson")
 
-# Añadir el título y cambiar la fuente
-title = tk.Label(tab_portada, text="Segmentación de Zonas con presencia\nde incendios forestales en tomas satelitales",
-                 font=("Helvetica", 18, "bold"))
-title.pack(pady=20)
+pestaña_umbralado = ttk.Frame(control_pestañas)
+control_pestañas.add(pestaña_umbralado, text="Filtro Umbralado")
 
-# Añadir la información de la comunidad
-info = tk.Label(tab_portada, text="Comunidad 7:\n• Díaz Martínez Aldo\n• Lagunes Vázquez Mildred Valeria\n• Lezama Tapia Brisa María.\n• Meléndez Medina Jimena\n• Pérez Aguirre Ian Miztli.", 
-                justify="left", font=("Helvetica", 14), bg="white")
+pestaña_min = ttk.Frame(control_pestañas)
+control_pestañas.add(pestaña_min, text="Filtro Mínimo")
+
+pestaña_gama = ttk.Frame(control_pestañas)
+control_pestañas.add(pestaña_gama, text="Gama")
+
+control_pestañas.pack(expand=1, fill="both")
+
+imagen_fondo = Image.open("fondo.jpg")
+imagen_fondo = ImageOps.fit(imagen_fondo, (1050, 700), Image.LANCZOS)
+imagen_fondo = ImageTk.PhotoImage(imagen_fondo)
+etiqueta_fondo = tk.Label(pestaña_portada, image=imagen_fondo)
+etiqueta_fondo.place(relwidth=1, relheight=1)
+
+titulo = tk.Label(pestaña_portada, text="Segmentación de Zonas con presencia\nde incendios forestales en tomas satelitales",
+                 font=("Helvetica", 18, "bold"), bg=None)
+titulo.pack(pady=20)
+
+info = tk.Label(pestaña_portada, text="Comunidad 7:\n• Díaz Martínez Aldo\n• Lagunes Vázquez Mildred Valeria\n• Lezama Tapia Brisa María.\n• Meléndez Medina Jimena\n• Pérez Aguirre Ian Miztli.", 
+                justify="left", font=("Helvetica", 14), bg=None)
 info.pack(pady=10)
 
-# Añadir el texto "Seleccione una imagen para modificar"
-select_text = tk.Label(tab_portada, text="Seleccione una imagen para modificar", font=("Helvetica", 12), bg="white")
-select_text.pack(pady=10)
+texto_seleccionar = tk.Label(pestaña_portada, text="Seleccione una imagen para modificar", font=("Helvetica", 12), bg=None)
+texto_seleccionar.pack(pady=10)
 
-# Selector de archivos
-file_path = None
-selected_img = None
+ruta_archivo = None
+img_seleccionada = None
 
-def select_file():
-    global file_path, selected_img
-    selected_img, file_path = load_image()
-    if selected_img is not None:
-        legend_text.set(f"Imagen ({os.path.basename(file_path)}) cargada correctamente")
-        apply_algorithms()
+def seleccionar_archivo():
+    global ruta_archivo, img_seleccionada
+    img_seleccionada, ruta_archivo = cargar_imagen()
+    if img_seleccionada is not None:
+        texto_leyenda.set(f"Imagen ({os.path.basename(ruta_archivo)}) cargada correctamente")
+        aplicar_algoritmos()
 
-file_selector = tk.Button(tab_portada, text="Seleccionar Imagen", command=select_file)
-file_selector.pack(pady=10)
+selector_archivo = tk.Button(pestaña_portada, text="Seleccionar Imagen", command=seleccionar_archivo)
+selector_archivo.pack(pady=10)
 
-# Leyenda para mostrar el nombre del archivo cargado
-legend_text = tk.StringVar()
-legend_label = tk.Label(tab_portada, textvariable=legend_text, font=("Helvetica", 12), bg="white")
-legend_label.pack(pady=10)
+texto_leyenda = tk.StringVar()
+etiqueta_leyenda = tk.Label(pestaña_portada, textvariable=texto_leyenda, font=("Helvetica", 12), bg=None)
+etiqueta_leyenda.pack(pady=10)
 
-# Instanciar las clases de los algoritmos
 filtro_robinson = FiltroRobinson()
 filtro_umbralado = FiltroUmbralado()
 filtro_min = FiltroMin()
 gama = Gama()
 
-# Función para aplicar los algoritmos y mostrar los resultados
-def apply_algorithms():
-    if selected_img is not None:
-        # Aplicar y mostrar resultados para cada algoritmo
-        display_algorithm_results(filtro_robinson, img_label_robinson_original, hist_label_robinson_original, img_label_robinson_processed, hist_label_robinson_processed)
-        display_algorithm_results(filtro_umbralado, img_label_umbralado_original, hist_label_umbralado_original, img_label_umbralado_processed, hist_label_umbralado_processed)
-        display_algorithm_results(filtro_min, img_label_min_original, hist_label_min_original, img_label_min_processed, hist_label_min_processed)
-        display_algorithm_results(gama, img_label_gama_original, hist_label_gama_original, img_label_gama_processed, hist_label_gama_processed)
+def aplicar_algoritmos():
+    if img_seleccionada is not None:
+        for figuras in figuras_pestañas.values():
+            cerrar_plots(figuras)
 
-def display_algorithm_results(algorithm, original_img_label, original_hist_label, processed_img_label, processed_hist_label):
-    # Mostrar imagen original y su histograma
-    display_image(selected_img, original_img_label)
-    display_histogram(selected_img, original_hist_label)
+        figuras_robinson = mostrar_resultados_algoritmo(filtro_robinson, etiqueta_robinson_original, histograma_robinson_original, etiqueta_robinson_procesada, histograma_robinson_procesada)
+        figuras_umbralado = mostrar_resultados_umbralado(filtro_umbralado, etiqueta_umbralado_original, histograma_umbralado_original, etiqueta_umbralado_procesada, histograma_umbralado_procesada)
+        figuras_min = mostrar_resultados_algoritmo(filtro_min, etiqueta_min_original, histograma_min_original, etiqueta_min_procesada, histograma_min_procesada)
+        figuras_gama = mostrar_resultados_algoritmo(gama, etiqueta_gama_original, histograma_gama_original, etiqueta_gama_procesada, histograma_gama_procesada)
+        
+        figuras_pestañas['Filtro de Robinson'] = figuras_robinson
+        figuras_pestañas['Filtro Umbralado'] = figuras_umbralado
+        figuras_pestañas['Filtro Mínimo'] = figuras_min
+        figuras_pestañas['Gama'] = figuras_gama
 
-    # Aplicar algoritmo y mostrar imagen procesada y su histograma
-    processed_img = algorithm.aplicar(selected_img)
-    display_image(processed_img, processed_img_label)
-    display_histogram(processed_img, processed_hist_label)
+def mostrar_resultados_algoritmo(algoritmo, etiqueta_img_original, histograma_img_original, etiqueta_img_procesada, histograma_img_procesada):
+    mostrar_imagen(img_seleccionada, etiqueta_img_original)
+    figura_original = mostrar_histograma(img_seleccionada, histograma_img_original)
 
-# Crear una cuadrícula para cada pestaña
-def create_grid(tab):
-    original_img_label = tk.Label(tab)
-    original_img_label.grid(row=0, column=0, padx=10, pady=10)
+    img_procesada = algoritmo.aplicar(img_seleccionada)
+    mostrar_imagen(img_procesada, etiqueta_img_procesada)
+    figura_procesada = mostrar_histograma(img_procesada, histograma_img_procesada)
 
-    original_hist_label = tk.Label(tab)
-    original_hist_label.grid(row=1, column=0, padx=10, pady=10)
+    return [figura_original, figura_procesada]
 
-    processed_img_label = tk.Label(tab)
-    processed_img_label.grid(row=0, column=1, padx=10, pady=10)
+def mostrar_resultados_umbralado(algoritmo, etiqueta_img_original, histograma_img_original, etiqueta_img_procesada, histograma_img_procesada):
+    img_gris = cv2.cvtColor(img_seleccionada, cv2.COLOR_BGR2GRAY)
+    mostrar_imagen(img_gris, etiqueta_img_original)
+    figura_original = mostrar_histograma_gris(img_gris, histograma_img_original)
 
-    processed_hist_label = tk.Label(tab)
-    processed_hist_label.grid(row=1, column=1, padx=10, pady=10)
+    img_procesada = algoritmo.aplicar(img_seleccionada)  # Pasa la imagen original en color
+    mostrar_imagen(img_procesada, etiqueta_img_procesada)
+    figura_procesada = mostrar_histograma_gris(img_procesada, histograma_img_procesada)
 
-    return original_img_label, original_hist_label, processed_img_label, processed_hist_label
+    return [figura_original, figura_procesada]
 
-# Crear cuadrículas para cada pestaña
-img_label_robinson_original, hist_label_robinson_original, img_label_robinson_processed, hist_label_robinson_processed = create_grid(tab_robinson)
-img_label_umbralado_original, hist_label_umbralado_original, img_label_umbralado_processed, hist_label_umbralado_processed = create_grid(tab_umbralado)
-img_label_min_original, hist_label_min_original, img_label_min_processed, hist_label_min_processed = create_grid(tab_min)
-img_label_gama_original, hist_label_gama_original, img_label_gama_processed, hist_label_gama_processed = create_grid(tab_gama)
+def crear_cuadricula(pestaña):
+    etiqueta_img_original = tk.Label(pestaña, bg=None)
+    etiqueta_img_original.grid(row=0, column=0, padx=10, pady=10)
 
-# Ajustar el tamaño de la ventana al contenido
-root.update_idletasks()
-root.geometry(f"{root.winfo_reqwidth()}x{root.winfo_reqheight()}")
+    histograma_img_original = tk.Label(pestaña, bg=None)
+    histograma_img_original.grid(row=1, column=0, padx=10, pady=10)
 
-# Ejecutar la ventana principal
-root.mainloop()
+    etiqueta_img_procesada = tk.Label(pestaña, bg=None)
+    etiqueta_img_procesada.grid(row=0, column=1, padx=10, pady=10)
+
+    histograma_img_procesada = tk.Label(pestaña, bg=None)
+    histograma_img_procesada.grid(row=1, column=1, padx=10, pady=10)
+
+    return etiqueta_img_original, histograma_img_original, etiqueta_img_procesada, histograma_img_procesada
+
+etiqueta_robinson_original, histograma_robinson_original, etiqueta_robinson_procesada, histograma_robinson_procesada = crear_cuadricula(pestaña_robinson)
+etiqueta_umbralado_original, histograma_umbralado_original, etiqueta_umbralado_procesada, histograma_umbralado_procesada = crear_cuadricula(pestaña_umbralado)
+etiqueta_min_original, histograma_min_original, etiqueta_min_procesada, histograma_min_procesada = crear_cuadricula(pestaña_min)
+etiqueta_gama_original, histograma_gama_original, etiqueta_gama_procesada, histograma_gama_procesada = crear_cuadricula(pestaña_gama)
+
+figuras_pestañas = {}
+
+def al_cambiar_pestaña(evento):
+    pestaña_seleccionada = evento.widget.tab('current')['text']
+    for pestaña, figuras in figuras_pestañas.items():
+        if pestaña != pestaña_seleccionada:
+            cerrar_plots(figuras)
+
+control_pestañas.bind("<<NotebookTabChanged>>", al_cambiar_pestaña)
+
+raiz.mainloop()
